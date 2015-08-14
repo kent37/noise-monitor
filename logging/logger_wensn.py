@@ -1,7 +1,5 @@
-
 # Sound/noise logger for WENSN 1361 meter
 # 2015, Rene Vega
-# 2015/08/02 - switch to new log file every two hours
 
 import datetime
 import time

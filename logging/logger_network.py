@@ -1,4 +1,3 @@
-
 # Sound/Noise logger - networked
 # 2015, Rene Vega
 # 2015-08-08, Fix registration logic.
@@ -41,6 +40,7 @@ def main():
    global PK
    global RefID
    global Backup
+   global TimeZone
 
    # Check for -bkup parameter
    if len(sys.argv) > 1 and sys.argv[1] == '-bkup':
@@ -55,12 +55,22 @@ def main():
 
    # Query the server's time (diagnostic)
    query_args = { 'Action':'get-time', 'PassKey':PK }
-   try:
-      response = S.post(URL, data=json.dumps(query_args))
-      print response.content
-   except:
-      print 'Server not responding'
-      sys.exit(1)
+   while True:
+      try:
+         response = S.post(URL, data=json.dumps(query_args))
+         print response.content
+         break                                                                                                                                                                                                                                  
+      except KeyboardInterrupt:
+         print '\nQuitting'
+         exit
+      except:
+         print 'Request timeout'
+         time.sleep(10)
+         exit
+
+   # Get the timezone difference
+   TimeZone = GetTimeZone()
+   print 'Timezone diff=', TimeZone
 
    # Register using the serial number of the RPI
    # This needs to be done at least once to create a device entry
@@ -119,9 +129,16 @@ def main():
          # for a retry.
          else:
             foff = -foff
+            print 'lost coms, retrying', datetime.datetime.now()
             break
 
       time.sleep(10)
+
+# Get the timezone
+def GetTimeZone():
+   loc = time.localtime()
+   gmt = time.gmtime()
+   return -time.timezone / 3600
 
 # Get the serial number of the Raspberry PI
 def GetSerial():
@@ -139,6 +156,8 @@ def GetLogFiles():
    return logf
 
 def ProcessLogFile(logf, foff):
+   global TimeZone
+
    # Send each item of the file to the server.
    # If the server times out, indicate failure
    ofoff = foff
@@ -160,7 +179,7 @@ def ProcessLogFile(logf, foff):
             # 2015-08-01 14:12:34.440317,WENSN 1361,A,fast,samp,30-80db,2,32.8,35.2
             query_args = { 'Action':'log', 'PassKey':PK, 'Ref_ID':RefID,
                            'Timestamp':items[0], 'Meter':items[1],
-                           'Weighting':items[2],'TimeZone':'-8', 'Samples':items[6],
+                           'Weighting':items[2],'TimeZone':TimeZone, 'Samples':items[6],
                            'Data':",".join([str(item) for item in items[7:]]) }
             try:
                response = S.post(URL, data=json.dumps(query_args))
