@@ -1,11 +1,14 @@
 $def with (date)
+$# Date data uses dygraph to display a chart of noise data for the date
 <html>
 <head>
+<title>$date</title>
 <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
 </head>
 <body>
+<h1>Noise measured on $date</h1>
 <div id="graphdiv2"
-  style="width:1000px; height:400px;"></div>
+  style="width:95%; height:400px;"></div>
 <script type="text/javascript">
 
 // Draw graph with fetched data

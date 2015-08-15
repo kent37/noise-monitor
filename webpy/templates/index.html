@@ -1,7 +1,10 @@
 $def with (dates)
+$# Index file template shows available dates
 <html><head>
 <title>Available dates</title>
 </head><body>
+<h2>Available dates</h2>
+<p>Click on a date to load data.</p>
 <ul>
 $for date in dates:
     <li><a href='show/$date'>$date</a></li>
