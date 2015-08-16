@@ -10,22 +10,98 @@ $# Date data uses dygraph to display a chart of noise data for the date
 </head>
 <body>
 <h1>Noise measured on $date</h1>
+
+$# Controls
 <div>
-  <label for="slider">Period for rolling average:</label>
+  <label for="slider">Filter width:</label>
   <input type="text" id="period" readonly 
     style="border:0; color:#f6931f; font-weight:bold; font-size: 14px; width:50px">
-<div id="slider" style="width:300px; display:inline-block"></div>
+  <div id="slider" style="width:300px; margin-right: 10px; display:inline-block"></div>
+
+  <label for="radio">Filter type:</label>
+  <div id="radio" style="display:inline-block">
+    <input type="radio" id="average" name="radio" checked="checked"><label for="average">Rolling Average</label>
+    <input type="radio" id="triangle" name="radio"><label for="triangle">Triangle Filter</label>
+  </div>
 </div>
- 
+
+<hr>
+
+$# The chart itself
 <div id="graphdiv" style="width:95%; height:400px;"></div>
+
 <script type="text/javascript">
+
+  // Generate a range of integers
+  function range1(i){return i?range1(i-1).concat(i):[]};
+
+  // Make a triangle kernel. Kernel is not normalized; that happens in the filter function
+  var makeTriangle = function(width)
+  {
+    var half_width = Math.floor(width / 2);
+    var half = range1(half_width);
+    var result = half.slice();
+    if (width % 2 == 1)
+      result = result.concat(half_width+1)
+    return result.concat(half.reverse());
+  };
+
+  // The stock rolling average
+  var rollingAverage_original = Dygraph.DataHandlers.DefaultHandler.prototype.rollingAverage;
+
+  // Apply a triangle filter to original data, returning new data
+  var triangleFilter = function(originalData, rollPeriod, options) {
+  rollPeriod = Math.min(rollPeriod, originalData.length);
+  var rollingData = [];
+  var filter = makeTriangle(rollPeriod);
+  var half_width = Math.floor(rollPeriod / 2);
+
+  var i, j, ix, y, weight, sum, num_ok;
+  if (rollPeriod == 1) {
+    return originalData;
+  }
+  for (i = 0; i < originalData.length; i++) {
+    sum = 0;
+    num_ok = 0;
+    for (j = 0; j < rollPeriod; j++) {
+      ix = i - half_width + j;
+      if (ix < 0 || ix >= originalData.length)
+        continue;
+      y = originalData[ix][1];
+      weight = filter[j];
+      if (y === null || isNaN(y))
+        continue;
+      num_ok += weight;
+      sum += y * weight
+    }
+    if (num_ok) {
+      rollingData[i] = [ originalData[i][0], sum / num_ok ];
+    } else {
+      rollingData[i] = [ originalData[i][0], null ];
+    }
+  }
+
+  return rollingData;
+};
+
+  var triangleButton = jQuery("#triangle");
+
+  // This is a hack to replace the rolling average function with a triangle filter
+  // when the triangle button is selected
+  Dygraph.DataHandlers.DefaultHandler.prototype.rollingAverage = 
+    function(originalData, rollPeriod, options) {
+      if (triangleButton.prop("checked"))
+        return triangleFilter(originalData, rollPeriod, options);
+      else
+        return rollingAverage_original(originalData, rollPeriod, options);
+    };
 
   // Draw graph with fetched data
   window.dygraph = new Dygraph(document.getElementById("graphdiv"), "/data/$date",
   	   { 
     	labels: [ "Date", "Noise" ],
     	showRangeSelector: true,
-		axes: {
+		  axes: {
 		    x: {
 		      axisLabelFormatter: function(d, gran, opts) {
 		          return Dygraph.dateAxisLabelFormatter(d, Dygraph.DAILY, opts) +
@@ -35,22 +111,32 @@ $# Date data uses dygraph to display a chart of noise data for the date
 		  },
 		  valueRange: [40, 80],
       rollPeriod: 1,
-      showRoller: true
-
+      showRoller: false
     });
 
-  // Set up the rolling average period
+  // Set up the filter width slider
   jQuery(function() {
     jQuery( "#slider" ).slider({
       value:1,
       min: 1,
-      max: 50,
+      max: 100,
       slide: function( event, ui ) {
-        window.dygraph.adjustRoll(+ui.value);
-        jQuery( "#period" ).val(+ui.value);
+        var value = +ui.value;
+        window.dygraph.adjustRoll(value);
+        jQuery( "#period" ).val(value);
       }
     });
+
+    // Set the initial value of the callout
     jQuery( "#period" ).val(+jQuery( "#slider" ).slider( "value" ));
+
+    // Radio buttons to select rolling average or triangle filter
+    jQuery( "#radio" ).buttonset();
+
+    // Force the chart to update when the button changes
+    jQuery("#average, #triangle").change(function () {
+      window.dygraph.adjustRoll(jQuery( "#slider" ).slider('value'));
+    });
   });
 
 </script>
