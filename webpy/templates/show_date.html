@@ -2,17 +2,26 @@ $def with (date)
 $# Date data uses dygraph to display a chart of noise data for the date
 <html>
 <head>
-<title>$date</title>
-<script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+  <title>$date</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 </head>
 <body>
 <h1>Noise measured on $date</h1>
-<div id="graphdiv2"
-  style="width:95%; height:400px;"></div>
+<div>
+  <label for="slider">Period for rolling average:</label>
+  <input type="text" id="period" readonly 
+    style="border:0; color:#f6931f; font-weight:bold; font-size: 14px; width:50px">
+<div id="slider" style="width:300px; display:inline-block"></div>
+</div>
+ 
+<div id="graphdiv" style="width:95%; height:400px;"></div>
 <script type="text/javascript">
 
-// Draw graph with fetched data
-  g = new Dygraph(document.getElementById("graphdiv2"), "/data/$date",
+  // Draw graph with fetched data
+  window.dygraph = new Dygraph(document.getElementById("graphdiv"), "/data/$date",
   	   { 
     	labels: [ "Date", "Noise" ],
     	showRangeSelector: true,
@@ -24,10 +33,25 @@ $# Date data uses dygraph to display a chart of noise data for the date
 		      }
 		    }
 		  },
-		  valueRange: [40, 80]
+		  valueRange: [40, 80],
+      rollPeriod: 1,
+      showRoller: true
 
     });
 
+  // Set up the rolling average period
+  jQuery(function() {
+    jQuery( "#slider" ).slider({
+      value:1,
+      min: 1,
+      max: 50,
+      slide: function( event, ui ) {
+        window.dygraph.adjustRoll(+ui.value);
+        jQuery( "#period" ).val(+ui.value);
+      }
+    });
+    jQuery( "#period" ).val(+jQuery( "#slider" ).slider( "value" ));
+  });
 
 </script>
 </body>
