@@ -111,11 +111,11 @@ def main():
             lastlog = logf[0]
          foff = ProcessLogFile(logf[0], foff)
 
-         # positive offset means the file was completely processed.
+         # non-negative offset means the file was completely processed.
          # Usually that means the log file should be deleted or backed up,
          # but when only one file is present, it is the active one and needs
          # to be left intact.
-         if (foff > 0):
+         if (foff >= 0):
             if nlogs != 1:
                if Backup: os.rename('logs/' + logf[0], 'bkup/' + logf[0])
                else:      os.remove('logs/' + logf[0])
