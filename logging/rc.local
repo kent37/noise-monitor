@@ -19,7 +19,6 @@ fi
 
 (bash /home/pi/wifi_monitor.sh)&
 
-(sleep 1;su -c "sudo python logger_wensn.py" - pi)&
-(sleep 10;su -c "sudo python logger_network.py -bkup" - pi)&
+(sleep 5;su -c "sudo python logger_wensn.py" - pi)&
+(sleep 60;su -c "sudo python logger_network.py -bkup" - pi)&
 exit 0
-

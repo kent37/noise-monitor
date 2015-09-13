@@ -57,7 +57,7 @@ def main():
 
       except Exception as e:
          print 'Exception accesing meter: ', e
-
+      
 
       logfile.close()
       print 'Restarting data collection'
@@ -89,7 +89,7 @@ def GetSamples(dev,logfile):
       else:              rate ='fast'
       if (ro&0x80) != 0: mode ='max'
       else:              mode = 'samp'
-
+      
       # Decode the range settings
       ro = ro & 0x1f
       if   ro == 0x00: range ='30-80db'
@@ -104,7 +104,7 @@ def GetSamples(dev,logfile):
       # Decibels is a 10-bit value with zero representing 30db
       db.append((ret[0] + ((ret[1] & 3) * 256)) * 0.1 + 30)
       dbi += 1
-
+      
       if dbi > 1:
          print db[0], ',', db[1], ' (', opts, ') raw=', str(bytearray(ret)).encode('hex')
 
@@ -115,7 +115,7 @@ def GetSamples(dev,logfile):
          logfile.flush()
          dbi = 0
          db = []
-
+      
       tdelta = now - tbgn
       esec = tdelta.total_seconds()
       if esec > 7200: return True
