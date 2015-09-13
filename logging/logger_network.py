@@ -2,6 +2,7 @@
 # 2015, Rene Vega
 # 2015-08-08, Fix registration logic.
 # 2015-08-09, Add try/except on http request to catch connection errors
+# 2015-09-11, Fix handling timeout exceptions (sometimes the server goes offline)
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -64,11 +65,10 @@ def main():
          break                                                                                                                                                                                                                                                                                        
       except KeyboardInterrupt:
          print '\nQuitting'
-         exit
+         sys.exit(1)
       except:
          print 'Request timeout'
          time.sleep(10)
-         exit
 
    # Get the timezone difference
    TimeZone = GetTimeZone()
@@ -109,7 +109,7 @@ def main():
          # from the beginning of the file
          if nlogs > 1: foff = 0;
          if lastlog != logf[0]:
-            Log('Processing log file (of ' + str(nlogs) + '): ' + logf[0] + ' @=' + str(foff))    
+            Log('Processing log file ' + logf[0] + ' @=' + str(foff) + ', ' + str(nlogs) + ' to go.')    
             lastlog = logf[0]
          foff = ProcessLogFile(logf[0], foff)
 
@@ -160,6 +160,7 @@ def GetLogFiles():
 
 def ProcessLogFile(logf, foff):
    global TimeZone
+   global S
 
    # Send each item of the file to the server.
    # If the server times out, indicate failure
@@ -183,16 +184,23 @@ def ProcessLogFile(logf, foff):
             query_args = { 'Action':'log', 'PassKey':PK, 'Ref_ID':RefID, 
                            'Timestamp':items[0], 'Meter':items[1],
                            'Weighting':items[2],'TimeZone':TimeZone, 'Samples':items[6],
+                           'Mode':items[4],
                            'Data':",".join([str(item) for item in items[7:]]) } 
             try:
                response = S.post(URL, data=json.dumps(query_args))
+			   # Anything other than a 200 status is a deep error condition. Close sessions then
+			   # return, that will drive the logic to delay for several seconds and retry.
                if response.status_code != 200:
+                  Log('Request status error: ' + str(response.status.code))
                   f.close()
                   S.close()
                   S = requests.Session()
                   return -foff;
-            except:
-               global S
+            except KeyboardInterrupt:
+               print '\nQuitting'
+               sys.exit(1)
+            except Exception, e:
+               Log('Request exception: ' + str(e))
                f.close()
                S.close()
                S = requests.Session()
@@ -202,11 +210,14 @@ def ProcessLogFile(logf, foff):
             # then use it to skim through the file. This avoids swamping
             # the server with wasteful transactions.
             jresp = json.loads(response.content)
-            if jresp['Status'] == 'Duplicate':
+            jstat = jresp['Status'];
+            if jstat == 'Duplicate':
                maxts = jresp['Timestamp']
                Log('Duplicate, skipping to ' + str(maxts))
+            elif jstat != "OK":
+               Log('Error status: ' + jstat);
 
-      else: msg( 'Tossing ', foff, ':', line)
+      else: Log( 'Tossing ' + str(foff) + ':')
 
       cnt += 1
       if (cnt %  100) == 0: Log('Processed: ' + str(cnt))
