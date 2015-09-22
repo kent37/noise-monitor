@@ -3,6 +3,7 @@
 # 2015-08-08, Fix registration logic.
 # 2015-08-09, Add try/except on http request to catch connection errors
 # 2015-09-11, Fix handling timeout exceptions (sometimes the server goes offline)
+# 2015-09-20, Fix race condition between meter logg writing to the og file and the metwork logger readign from it.
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -29,7 +30,7 @@ URL = 'https://skyote.com/nl/nl-serverj.php'
 PK  = '569gksxi4e7883,r60etgv-10d'
 RefID = ''
 
-# Raspbian linux has somewhat broken SSL that is going to be fixed soon,
+# Raspbian linux has a somewhat broken SSL that is going to be fixed soon,
 # so in the meantime, disable the warning messages
 logging.captureWarnings(True)
 
@@ -177,7 +178,7 @@ def ProcessLogFile(logf, foff):
       items = line.split(',')
       # if foff != 0: print 'offset=', foff, 'line=', line
 
-      if len(items) > 2:
+      try:
          if (maxts == '') | (items[0] > maxts):
             # timestemp, meter_model, weight, rate, mode, range, num_samp, db1, db2, ...
             # 2015-08-01 14:12:34.440317,WENSN 1361,A,fast,samp,30-80db,2,32.8,35.2
@@ -217,7 +218,8 @@ def ProcessLogFile(logf, foff):
             elif jstat != "OK":
                Log('Error status: ' + jstat);
 
-      else: Log( 'Tossing ' + str(foff) + ':')
+      except Exception, e:
+         Log( 'Tossing incomplete line ' + str(foff) + ':' + e)
 
       cnt += 1
       if (cnt %  100) == 0: Log('Processed: ' + str(cnt))
