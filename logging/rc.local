@@ -17,8 +17,11 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-(bash /home/pi/wifi_monitor.sh)&
+# Start the WIFI monitor, works around WIFI stack bugs
+(bash /home/pi/logger/wifi_monitor.sh)&
 
-(sleep 5;su -c "sudo python logger_wensn.py" - pi)&
-(sleep 60;su -c "sudo python logger_network.py -bkup" - pi)&
+# Start the noise monitoring applets
+(sleep 5;su -c "sudo python logger/logger_wensn.py" - pi)&
+(sleep 60;su -c "sudo python logger/logger_network.py -bkup" - pi)&
+
 exit 0

@@ -3,7 +3,12 @@
 # 2015-08-08, Fix registration logic.
 # 2015-08-09, Add try/except on http request to catch connection errors
 # 2015-09-11, Fix handling timeout exceptions (sometimes the server goes offline)
-# 2015-09-20, Fix race condition between meter logg writing to the og file and the metwork logger readign from it.
+# 2015-09-20, Fix race condition between meter log writing to the log file and the network logger reading from it.
+# 2015-09-21, Add core temperature/voltage logging.
+# 2015-09-22, Add version control
+# 2015-09-23, Add batched samples to speed up catchup mode and to lower the physical write rate.
+# 2015-09-23, 2.1 - Fix another race condition.
+# 2015-09-24, 2.2 - Clean up error messages.
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -25,6 +30,9 @@ import datetime
 import sys
 import syslog
 
+Version = '2.2'
+Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
+
 # server connection
 URL = 'https://skyote.com/nl/nl-serverj.php'
 PK  = '569gksxi4e7883,r60etgv-10d'
@@ -37,14 +45,19 @@ logging.captureWarnings(True)
 # The requests package will maintain keep-alive connections for a session,
 # vastly speeds up HTTP accesses.
 S = requests.Session()
+print os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def main():
+   global Version
+   global Path
    global S
    global URL
    global PK
    global RefID
    global Backup
    global TimeZone
+
+   Log('Network logger started, version: ' + Version)
 
    # Check for -bkup parameter
    if len(sys.argv) > 1 and sys.argv[1] == '-bkup':
@@ -53,17 +66,17 @@ def main():
    else: Backup = False
 
    # Create the bkup directory
-   dir = 'bkup'
+   dir = Path + 'bkup'
    if not os.path.exists(dir):
       os.makedirs(dir)
 
    # Query the server's time (diagnostic)
    query_args = { 'Action':'get-time', 'PassKey':PK }
    while True:
-      try: 
+      try:
          response = S.post(URL, data=json.dumps(query_args))
          Log(response.content)
-         break                                                                                                                                                                                                                                                                                        
+         break
       except KeyboardInterrupt:
          print '\nQuitting'
          sys.exit(1)
@@ -92,9 +105,9 @@ def main():
    if jresp['Status'] == 'OK': RefID = jresp['Ref_ID']
    else: RefID = ''
    Log('Ref_ID=' + RefID + ' ' + str(response))
-   
-   Log('Network logger started')
-   
+
+   Log('Network logger processing files')
+
    foff = 0
    lastlog = ''
    delay = 10
@@ -110,8 +123,9 @@ def main():
          # from the beginning of the file
          if nlogs > 1: foff = 0;
          if lastlog != logf[0]:
-            Log('Processing log file ' + logf[0] + ' @=' + str(foff) + ', ' + str(nlogs) + ' to go.')    
+            Log('Processing log file ' + logf[0] + ' @=' + str(foff) + ', ' + str(nlogs) + ' to go.')
             lastlog = logf[0]
+
          foff = ProcessLogFile(logf[0], foff)
 
          # zero or positive offset means the file was completely processed.
@@ -120,8 +134,8 @@ def main():
          # to be left intact.
          if (foff >= 0):
             if nlogs > 1:
-               if Backup: os.rename('logs/' + logf[0], 'bkup/' + logf[0])
-               else:      os.remove('logs/' + logf[0])
+               if Backup: os.rename(Path + 'logs/' + logf[0], Path + 'bkup/' + logf[0])
+               else:      os.remove(Path + 'logs/' + logf[0])
                foff = 0
                Log('Processed log file: ' + logf[0])
             else:
@@ -133,7 +147,7 @@ def main():
          # for a retry.
          else:
             foff = -foff
-            Log('lost coms, retrying ' + str(datetime.datetime.now()));
+            Log('Retrying log file processsing');
             break
 
       time.sleep(10)
@@ -151,48 +165,61 @@ def GetSerial():
    for l in f:
       if l[0:6] == 'Serial': serial = l[10:26]
    f.close()
-   return serial 
+   return serial
 
 # Get the sorted list of log file name
 def GetLogFiles():
-   logf = os.listdir('logs')
+   global Path
+   logf = os.listdir(Path + 'logs')
    logf.sort()
    return logf
 
 def ProcessLogFile(logf, foff):
    global TimeZone
    global S
+   global Path
 
    # Send each item of the file to the server.
    # If the server times out, indicate failure
    ofoff = foff
    maxts = ''
 
-   f = open('logs/' + logf, 'r')
+   f = open(Path + 'logs/' + logf, 'r')
    if f is None: return None;
    if foff != 0: f.seek(foff)
 
    cnt = 0
    for line in f:
-      foff = f.tell()
+      nfoff = f.tell()
       items = line.split(',')
-      # if foff != 0: print 'offset=', foff, 'line=', line
+
+      # close the file and retry at the same offset if a partial line was read (race condition)
+      if len(items) < 8 or len(items) < (8 + int(items[7])):   
+         Log( 'Incomplete line, found, ' + len(items) + ' items @' + str(foff))
+         f.close();
+         return -foff;
 
       try:
+         # pre v2 compatibility hack
+         if not containsOnly(items[1], "0123456789."):
+            items.insert(1,'1.0');
+
          if (maxts == '') | (items[0] > maxts):
-            # timestemp, meter_model, weight, rate, mode, range, num_samp, db1, db2, ...
-            # 2015-08-01 14:12:34.440317,WENSN 1361,A,fast,samp,30-80db,2,32.8,35.2
-            query_args = { 'Action':'log', 'PassKey':PK, 'Ref_ID':RefID, 
-                           'Timestamp':items[0], 'Meter':items[1],
-                           'Weighting':items[2],'TimeZone':TimeZone, 'Samples':items[6],
-                           'Mode':items[4],
-                           'Data':",".join([str(item) for item in items[7:]]) } 
+            # timestemp, version, meter_model, weight, rate, mode, range, num_samp, db1, db2, ...
+            # 2015-08-01 14:12:34.440317,2.0,WENSN 1361,A,fast,samp,30-80db,2,32.8,35.2
+            query_args = { 'Action':'log', 'PassKey':PK, 'Ref_ID':RefID,
+                           'Timestamp':items[0], 'Version':items[1], 'Meter':items[2],
+                           'Weighting':items[3],'TimeZone':TimeZone, 'Samples':items[7],
+                           'Mode':items[5],
+                           'Data':",".join([str(item) for item in items[8:]]),
+                           'Temp':GetCoreTemp(), 'Volts':GetCoreVolts() }
+            # print query_args
             try:
                response = S.post(URL, data=json.dumps(query_args))
-			   # Anything other than a 200 status is a deep error condition. Close sessions then
-			   # return, that will drive the logic to delay for several seconds and retry.
+               # Anything other than a 200 status is a deep error condition. Close sessions then
+               # return, that will drive the logic to delay for several seconds and retry.
                if response.status_code != 200:
-                  Log('Request status error: ' + str(response.status.code))
+                  Log('HTTP Request status error: ' + str(response.status.code))
                   f.close()
                   S.close()
                   S = requests.Session()
@@ -201,7 +228,7 @@ def ProcessLogFile(logf, foff):
                print '\nQuitting'
                sys.exit(1)
             except Exception, e:
-               Log('Request exception: ' + str(e))
+               Log('HTTP Request exception: ' + str(e))
                f.close()
                S.close()
                S = requests.Session()
@@ -214,21 +241,43 @@ def ProcessLogFile(logf, foff):
             jstat = jresp['Status'];
             if jstat == 'Duplicate':
                maxts = jresp['Timestamp']
-               Log('Duplicate, skipping to ' + str(maxts))
+               Log('Server says duplicate, skipping to ' + str(maxts))
             elif jstat != "OK":
-               Log('Error status: ' + jstat);
+               Log('Server error status: ' + jstat);
+               f.close()
+               return -foff
 
       except Exception, e:
-         Log( 'Tossing incomplete line ' + str(foff) + ':' + e)
+         Log( 'Tossing incomplete line ' + str(foff) + ':' + str(e))
+         # close the file and retry
+         f.close()
+         return -foff;
 
+      foff = nfoff;
       cnt += 1
       if (cnt %  100) == 0: Log('Processed: ' + str(cnt))
 
    f.close()
-   return foff; 
+   return foff
 
 def Log(msg):
    print msg
    syslog.syslog(msg)
+
+def GetCoreTemp():
+   temp = os.popen('vcgencmd measure_temp').readline()
+   temp = temp.replace('temp=', '').replace("'C\n","")
+   return temp
+
+def GetCoreVolts():
+   volts = os.popen('vcgencmd measure_volts').readline()
+   volts = volts.replace('volt=', '').replace('V\n', '')
+   return volts
+
+def containsOnly(str, set):
+    # Check whether 'str' contains only the chars in 'set'
+    for c in str:
+       if c not in set: return 0
+    return 1
 
 main()
