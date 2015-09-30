@@ -50,3 +50,9 @@ def parse_data(files):
 					date = data[0][:19] # Date and time without msec
 					avg = (float(data[7]) + float(data[8]))/2 # Average the two noise readings
 					yield '%s,%s\r\n' % (date, avg)
+				elif len(data) > 9:
+					version = float(data[1]) # Should be 2.0
+					date = data[0][:19] # Date and time without msec
+					readings = list(map(float, data[8:]))
+					avg = sum(readings)/len(readings)
+					yield '%s,%s\r\n' % (date, avg)
