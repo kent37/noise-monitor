@@ -4,9 +4,14 @@ import os
 import web
 import config
 
+from datetime import datetime, timedelta
+from itertools import izip_longest
+
 # At least one of these directories must exist. We will look in both
 log_path = os.path.join(config.base_path, 'logs')
 bkup_path = os.path.join(config.base_path, 'bkup')
+
+date_format = '%Y-%m-%d %H:%M:%S'
 
 def dates():
 	""" Return a sorted list of all available dates """
@@ -40,6 +45,13 @@ def date_files(path, date):
 	files.sort()
 	return files
 
+# From itertools recipes
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    args = [iter(iterable)] * n
+    return izip_longest(fillvalue=fillvalue, *args)
+
 def parse_data(files):
 	""" Parse a list of files. Returns an iterable of lines with just a timestamp and value. """
 	for file in files:
@@ -53,6 +65,9 @@ def parse_data(files):
 				elif len(data) > 9:
 					version = float(data[1]) # Should be 2.0
 					date = data[0][:19] # Date and time without msec
+					dt = datetime.strptime(date, date_format)
 					readings = list(map(float, data[8:]))
-					avg = sum(readings)/len(readings)
-					yield '%s,%s\r\n' % (date, avg)
+					for pair in grouper(readings, 2):
+						avg = sum(pair)/len(pair)
+						yield '%s,%s\r\n' % (dt.strftime(date_format), avg)
+						dt += timedelta(seconds=1)
