@@ -1,13 +1,13 @@
 # Core logger of the RPI
 # 2015, Rene Vega
+# 2015-10-01, Remove double version line
 
 import datetime
 import time
 import sys
 import os
 
-Version = '1.0'
-Path = Version = '2.0'
+Version = '1.1'
 Path = os.path.dirname(os.path.realpath(sys.argv[0])) + '/'
 
 def main():

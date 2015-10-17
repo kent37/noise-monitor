@@ -9,6 +9,10 @@
 # 2015-09-23, Add batched samples to speed up catchup mode and to lower the physical write rate.
 # 2015-09-23, 2.1 - Fix another race condition.
 # 2015-09-24, 2.2 - Clean up error messages.
+# 2015-09-24, 2.3 - Skip incomplete data altogether
+# 2015-09-24, 2.4 - Serious corruption issue (power off?) Skip incomplete data altogether.
+# 2015-10-02, 2.5 - Suspect a sessions bug, closing a session after an post exception fails.
+# 2015-10-02, 2.6 - Add update and reboot response transfer logic.
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -29,8 +33,9 @@ import os
 import datetime
 import sys
 import syslog
+import subprocess
 
-Version = '2.2'
+Version = '2.6'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
 # server connection
@@ -95,16 +100,22 @@ def main():
    response = S.post(URL, data=json.dumps(query_args))
    Log(response.content)
 
-   # Log in using the Raspberry PI's serial number. A reference ID is returned
-   query_args = { 'Action':'data-login', 'Serial':serial, 'PassKey':PK }
-   response = S.post(URL, data=json.dumps(query_args))
-   if response.status_code != 200:
-      Log('Server rejected login, code=' + str(sponse.status_code))
-      sys.exit(1)
-   jresp = json.loads(response.content)
-   if jresp['Status'] == 'OK': RefID = jresp['Ref_ID']
-   else: RefID = ''
-   Log('Ref_ID=' + RefID + ' ' + str(response))
+   while True:
+        # Log in using the Raspberry PI's serial number. A reference ID is returned
+        query_args = { 'Action':'data-login', 'Serial':serial, 'PassKey':PK }
+        response = S.post(URL, data=json.dumps(query_args))
+        if response.status_code != 200:
+            Log('Server rejected login, code=' + str(response.status_code))
+            time.sleep(10)
+            continue
+        jresp = json.loads(response.content)
+        if jresp['Status'] == 'OK':
+            RefID = jresp['Ref_ID']
+            Log('Ref_ID=' + RefID + ' ' + str(response))
+            break
+        else:
+            Log('Login rejected: ' + jresp['Status'])
+            time.sleep(10)
 
    Log('Network logger processing files')
 
@@ -150,7 +161,54 @@ def main():
             Log('Retrying log file processsing');
             break
 
+      # Check for server actions
+      CheckServerActions()
       time.sleep(10)
+
+# Check server for actions
+def CheckServerActions():
+    global Version
+    global Path
+    global S
+    global URL
+    global PK
+    global RefID
+
+    query_args = { 'Action':'Check', 'PassKey':PK, 'Ref_ID':RefID }
+    try:
+        response = S.post(URL, data=json.dumps(query_args))
+    except KeyboardInterrupt:
+        print '\nQuitting'
+        sys.exit(1)
+    except Exception, e:
+        Log('HTTP Request exception: ' + str(e))
+        S = requests.Session()
+        return
+
+    if response.status_code == 200:
+        jresp = json.loads(response.content)
+        DoServerAction(jresp);
+
+def DoServerAction(jresp):
+    global Path
+
+    jstat = jresp['Status']
+    action = jresp['Action'] # a json string
+
+    # Special command to reboot the system.
+    if jstat == 'Reboot':
+        Log('Server requests reboot');
+        time.sleep(1)
+        ipa = subprocess.check_output(['sudo','reboot'], stderr=subprocess.STDOUT)
+        sys.exit(1)
+    elif jstat == 'More':
+        Log('Server requests more action: ' + action)
+        updater = Path + 'logger_updater.py'
+        if os.path.isfile(updater):
+            try: subprocess.call(['python',updater, action])
+            except: pass
+    elif jstat != 'OK':
+        Log('Server error status: ' + jstat);
 
 # Get the timezone
 def GetTimeZone():
@@ -175,6 +233,7 @@ def GetLogFiles():
    return logf
 
 def ProcessLogFile(logf, foff):
+   print 'ProcessLogFile'
    global TimeZone
    global S
    global Path
@@ -193,13 +252,12 @@ def ProcessLogFile(logf, foff):
       nfoff = f.tell()
       items = line.split(',')
 
-      # close the file and retry at the same offset if a partial line was read (race condition)
-      if len(items) < 8 or len(items) < (8 + int(items[7])):   
-         Log( 'Incomplete line, found, ' + len(items) + ' items @' + str(foff))
-         f.close();
-         return -foff;
-
       try:
+         # Hack: If a partial line was read, skip over it (seeing nulls).
+         if len(items) < 8 or len(items) < (8 + int(items[7])):
+            Log( 'Incomplete line, found, ' + str(len(items)) + ' items @' + str(foff) +" skip to: @" + (str(nfoff)))
+            continue;
+
          # pre v2 compatibility hack
          if not containsOnly(items[1], "0123456789."):
             items.insert(1,'1.0');
@@ -230,7 +288,7 @@ def ProcessLogFile(logf, foff):
             except Exception, e:
                Log('HTTP Request exception: ' + str(e))
                f.close()
-               S.close()
+               # S.close()
                S = requests.Session()
                return -foff
 
@@ -242,7 +300,10 @@ def ProcessLogFile(logf, foff):
             if jstat == 'Duplicate':
                maxts = jresp['Timestamp']
                Log('Server says duplicate, skipping to ' + str(maxts))
-            elif jstat != "OK":
+            # Special command for more action.
+            elif jstat == 'Reboot' or jstat == 'More':
+                DoServerAction(jresp)
+            elif jstat != 'OK':
                Log('Server error status: ' + jstat);
                f.close()
                return -foff

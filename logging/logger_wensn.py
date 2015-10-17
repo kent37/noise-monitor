@@ -3,6 +3,7 @@
 # 2015-09-22, Add logging to var/log/messages
 # 2015-09-22, Add version control
 # 2015-09-23, Add batched samples to speed up catchup mode and to lower the physical write rate.
+# 2015-09-30, fix missing ","
 
 import datetime
 import time
@@ -11,7 +12,7 @@ import usb.core
 import os
 import syslog
 
-Version = '2.0'
+Version = '2.1'
 Path = os.path.dirname(os.path.realpath(sys.argv[0])) + '/'
 
 def Log(msg):
