@@ -22,9 +22,13 @@ fi
 
 # Start the noise monitoring applets
 (sleep 5;su -c "sudo python logger/logger_wensn.py" - pi)&
-(sleep 30;su -c "sudo python logger/logger_network.py" - pi)&
+#(sleep 30;su -c "sudo python logger/logger_network.py" - pi)&
 
 # Replace the above with the -bkup below if you wish  to save
 # the logs locally. Note that the SD card will fill up.
-# (sleep 30;su -c "sudo python logger/logger_network.py -bkup" - pi)&
+(sleep 30;su -c "sudo python logger/logger_network.py -bkup" - pi)&
+
+# Start the local webserver to display noise charts
+(sleep 10;su -c "cd ~/webpy && python code.py" - pi)&
+
 exit 0
