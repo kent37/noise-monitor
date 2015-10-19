@@ -1,0 +1,26 @@
+{ "now" : 1445209377.4,
+  "messages" : 7013301,
+  "aircraft" : [
+    {"hex":"aacf19","lat":42.555130,"lon":-71.641721,"nucp":6,"seen_pos":22.5,"altitude":12800,"vert_rate":-1792,"track":108,"speed":336,"messages":8,"seen":22.4,"rssi":-34.7},
+    {"hex":"47c5c5","squawk":"6330","flight":"NAX7005 ","lat":42.946472,"lon":-70.981197,"nucp":7,"seen_pos":17.4,"altitude":38000,"vert_rate":0,"track":196,"speed":508,"category":"A5","messages":204,"seen":12.2,"rssi":-35.0},
+    {"hex":"ac6445","squawk":"1453","flight":"AAL1664 ","lat":42.370743,"lon":-71.179234,"nucp":7,"seen_pos":0.1,"altitude":5550,"vert_rate":2816,"track":226,"speed":269,"category":"A0","messages":1722,"seen":0.1,"rssi":-23.7},
+    {"hex":"a14700","squawk":"1175","flight":"UAL70   ","lat":42.077404,"lon":-71.640057,"nucp":0,"seen_pos":0.8,"altitude":35000,"vert_rate":-128,"track":57,"speed":479,"category":"A0","messages":603,"seen":0.2,"rssi":-30.7},
+    {"hex":"a57d56","squawk":"5357","lat":42.537899,"lon":-71.164579,"nucp":0,"seen_pos":1.4,"altitude":9350,"vert_rate":2688,"track":339,"speed":248,"mlat":["lat","lon","track","speed","vert_rate"],"messages":2565,"seen":0.3,"rssi":-31.3},
+    {"hex":"a15052","squawk":"7432","lat":42.467605,"lon":-71.252725,"nucp":0,"seen_pos":1.4,"altitude":8025,"vert_rate":-2432,"track":104,"speed":282,"mlat":["lat","lon","track","speed","vert_rate"],"messages":809,"seen":0.3,"rssi":-27.8},
+    {"hex":"4cc4c7","squawk":"3441","flight":"WOW126  ","lat":42.579346,"lon":-70.933477,"nucp":6,"seen_pos":0.3,"altitude":10000,"vert_rate":2240,"track":46,"speed":275,"category":"A0","messages":3721,"seen":0.3,"rssi":-27.0},
+    {"hex":"a74cc2","squawk":"1752","altitude":1075,"vert_rate":-576,"track":176,"speed":155,"messages":7,"seen":280.3,"rssi":-32.5},
+    {"hex":"4007f5","squawk":"2617","flight":"BAW9E   ","lat":41.971498,"lon":-71.053055,"nucp":6,"seen_pos":4.3,"altitude":37325,"vert_rate":512,"track":76,"speed":512,"category":"A0","messages":297,"seen":4.3,"rssi":-31.7},
+    {"hex":"a3d462","squawk":"7376","flight":"1159    ","lat":42.067395,"lon":-70.960374,"nucp":0,"seen_pos":2.0,"altitude":15625,"vert_rate":3008,"track":145,"speed":381,"mlat":["lat","lon","altitude","track","speed","vert_rate"],"messages":2725,"seen":0.4,"rssi":-34.8},
+    {"hex":"a7950f","squawk":"3413","flight":"N588QS  ","lat":42.209193,"lon":-71.501323,"nucp":0,"seen_pos":1.7,"altitude":36550,"vert_rate":1216,"track":285,"speed":339,"mlat":["lat","lon","track","speed","vert_rate"],"messages":2951,"seen":0.3,"rssi":-31.2},
+    {"hex":"aa44d0","squawk":"1701","flight":"UAL57   ","lat":42.368362,"lon":-70.612751,"nucp":0,"seen_pos":3.1,"altitude":33000,"vert_rate":0,"track":64,"speed":492,"category":"A0","messages":3942,"seen":1.5,"rssi":-32.2},
+    {"hex":"a4dab6","squawk":"2714","flight":"UAL110  ","lat":42.053709,"lon":-70.422938,"nucp":0,"seen_pos":52.8,"altitude":36975,"vert_rate":64,"track":76,"speed":494,"category":"A0","messages":1299,"seen":52.8,"rssi":-34.4},
+    {"hex":"a8222c","squawk":"2012","flight":"JBU991  ","lat":42.117113,"lon":-72.028731,"nucp":0,"seen_pos":2.2,"altitude":22450,"vert_rate":1600,"track":252,"speed":387,"category":"A0","mlat":["lat","lon","altitude","track","speed","vert_rate"],"messages":4096,"seen":2.2,"rssi":-49.5},
+    {"hex":"a4278e","squawk":"4104","altitude":2800,"vert_rate":-1408,"track":75,"speed":219,"mlat":["lat","lon","altitude","track","speed","vert_rate"],"messages":3584,"seen":203.8,"rssi":-49.5},
+    {"hex":"4840e0","flight":"KLM24   ","altitude":37000,"vert_rate":0,"track":62,"speed":524,"category":"A0","messages":1695,"seen":209.9,"rssi":-33.1},
+    {"hex":"a94b6b","squawk":"5006","flight":"UAL1077 ","altitude":19375,"vert_rate":320,"track":279,"speed":392,"category":"A0","messages":3297,"seen":95.1,"rssi":-34.8},
+    {"hex":"a8b760","squawk":"2701","flight":"UAL106  ","altitude":34975,"vert_rate":-64,"track":70,"speed":494,"category":"A0","messages":3673,"seen":147.7,"rssi":-35.0},
+    {"hex":"a189a7","squawk":"2570","flight":"AAL121  ","altitude":34900,"vert_rate":-1216,"track":203,"speed":462,"category":"A0","messages":3233,"seen":201.2,"rssi":-33.1},
+    {"hex":"aaee19","squawk":"7464","flight":"4588    ","altitude":3400,"vert_rate":-2048,"track":130,"speed":241,"mlat":["altitude","track","speed","vert_rate"],"messages":3719,"seen":168.5,"rssi":-41.7},
+    {"hex":"4951e5","squawk":"1144","flight":"TAP204  ","altitude":35675,"vert_rate":0,"track":63,"speed":498,"category":"A0","messages":3124,"seen":128.8,"rssi":-34.0}
+  ]
+}
