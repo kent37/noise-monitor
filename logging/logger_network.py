@@ -13,6 +13,7 @@
 # 2015-09-24, 2.4 - Serious corruption issue (power off?) Skip incomplete data altogether.
 # 2015-10-02, 2.5 - Suspect a sessions bug, closing a session after an post exception fails.
 # 2015-10-02, 2.6 - Add update and reboot response transfer logic.
+# 2015-11-01, 2.7 - Include the network version, and WIFI  signal strength
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -35,7 +36,7 @@ import sys
 import syslog
 import subprocess
 
-Version = '2.6'
+Version = '2.7'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
 # server connection
@@ -266,9 +267,9 @@ def ProcessLogFile(logf, foff):
             # timestemp, version, meter_model, weight, rate, mode, range, num_samp, db1, db2, ...
             # 2015-08-01 14:12:34.440317,2.0,WENSN 1361,A,fast,samp,30-80db,2,32.8,35.2
             query_args = { 'Action':'log', 'PassKey':PK, 'Ref_ID':RefID,
-                           'Timestamp':items[0], 'Version':items[1], 'Meter':items[2],
+                           'Timestamp':items[0], 'NetVersion':Version, 'Version':items[1], 'Meter':items[2],
                            'Weighting':items[3],'TimeZone':TimeZone, 'Samples':items[7],
-                           'Mode':items[5],
+                           'Mode':items[5], 'WifiDB':GetWifiDB(),
                            'Data':",".join([str(item) for item in items[8:]]),
                            'Temp':GetCoreTemp(), 'Volts':GetCoreVolts() }
             # print query_args
@@ -334,6 +335,13 @@ def GetCoreVolts():
    volts = os.popen('vcgencmd measure_volts').readline()
    volts = volts.replace('volt=', '').replace('V\n', '')
    return volts
+
+def GetWifiDB():
+   wdb = os.popen('cat /proc/net/wireless | grep wlan').readline()
+   wdb += '-127 -127 -127 -127'
+   wdbl = wdb.split()
+   wdb = wdbl[3];
+   return wdb
 
 def containsOnly(str, set):
     # Check whether 'str' contains only the chars in 'set'

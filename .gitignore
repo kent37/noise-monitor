@@ -56,6 +56,5 @@ docs/_build/
 # PyBuilder
 target/
 
-.spyderproject
-
-.spyderworkspace
+# Spyder project files
+.spyder*

@@ -4,6 +4,7 @@
 # 2015-09-22, Add version control
 # 2015-09-23, Add batched samples to speed up catchup mode and to lower the physical write rate.
 # 2015-09-30, fix missing ","
+# 2015-11-01, raise the batchsize to 20 samples (10 second intervals)
 
 import datetime
 import time
@@ -12,8 +13,11 @@ import usb.core
 import os
 import syslog
 
-Version = '2.1'
+Version = '2.2'
 Path = os.path.dirname(os.path.realpath(sys.argv[0])) + '/'
+
+LogDuration = 7200
+BatchSize =     20
 
 def Log(msg):
    print msg
@@ -79,7 +83,9 @@ def main():
 
 # ---------------------------------------
 def GetSamples(dev,logfile):
-   batchsize = 10
+   global LogDuration
+   global BatchSize
+   
    tbgn = datetime.datetime.now()
    now = tbgn;
    dbi = 0
@@ -121,7 +127,7 @@ def GetSamples(dev,logfile):
       dbi += 1
 
       # Combine 10 samples for a 5-second interval
-      if dbi >= batchsize:
+      if dbi >= BatchSize:
          print ','.join([str(item) for item in db[0:]]), ' (', opts, ') raw=', str(bytearray(ret)).encode('hex')
 
          # Write a log entry: datetime,version,meter_type,weight,rate,mode,range,num_samples,samp1,samp2,...
@@ -136,7 +142,7 @@ def GetSamples(dev,logfile):
 
       tdelta = now - tbgn
       esec = tdelta.total_seconds()
-      if esec > 7200: return True
+      if esec > LogDuration: return True
 
       time.sleep(0.5)
 
