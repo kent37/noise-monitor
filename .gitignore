@@ -58,3 +58,5 @@ target/
 
 # Spyder project files
 .spyder*
+
+dump1090/tracks.csv
