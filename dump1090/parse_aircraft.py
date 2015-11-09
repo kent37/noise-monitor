@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import csv
-import json
 import math
 import requests
 import time
 
-from contextlib import closing
-from datetime import datetime
 
 rpi2 = 'http://rpi2.local/dump1090'
 feet_per_meter = 3.28084
@@ -53,7 +50,7 @@ def aircraft_loop(url):
         if json:
             now = json['now']
             if now > previous:
-                print now
+                # print now
                 for ac in json['aircraft']:
                     ac['time'] = now
                     yield ac
@@ -75,8 +72,10 @@ def read_receiver(url):
 
 
 def read_aircraft(url):
-    r = S.get(url + '/data/aircraft.json')
-    if r.status_code != requests.codes.ok:
+    try:
+        r = S.get(url + '/data/aircraft.json')
+        r.raise_for_status()
+    except:
         return
 
     return r.json()
@@ -91,7 +90,6 @@ def greatcircle(lon0, lat0, lon1, lat1):
     return 6371e3 * math.acos(math.sin(lat0) * math.sin(lat1) + math.cos(lat0) * math.cos(lat1) * math.cos(abs(lon0 - lon1)))
 
 if __name__ == '__main__':
-    import pprint
     home = read_receiver(rpi2)
 
     with open('tracks.csv', 'w') as csvfile:
