@@ -35,3 +35,24 @@ def find_new_logs():
 		output = output.split()
 		output = [f for f in output if f not in local_logs]
 		return output
+
+@hosts('rpi2.local')
+def get_new_tracks():
+	''' Download all new tracks. '''
+	new_tracks = find_new_tracks()
+	print 'Fetching', len(find_new_tracks()), ' new tracks'
+	with cd('/home/pi/logger/tracks'), lcd('../tracks'):
+		for track in new_tracks:
+			print track
+			get(remote_path=track, local_path=track)
+
+@hosts('rpi2.local')
+def find_new_tracks():
+	''' Get a list of tracks on the remote not on local. '''
+	local_tracks = set(os.listdir('../tracks'))
+	with cd('/home/pi/logger/tracks'):
+		myout = StringIO()
+		output = run('ls', stdout=myout)
+		output = output.split()
+		output = [f for f in output if f not in local_tracks]
+		return output
