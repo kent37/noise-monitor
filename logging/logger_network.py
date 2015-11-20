@@ -14,6 +14,7 @@
 # 2015-10-02, 2.5 - Suspect a sessions bug, closing a session after an post exception fails.
 # 2015-10-02, 2.6 - Add update and reboot response transfer logic.
 # 2015-11-01, 2.7 - Include the network version, and WIFI  signal strength
+# 2015-11-19, 2.8 - Reduce the buffering of the log fiels to a single line.
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -36,7 +37,7 @@ import sys
 import syslog
 import subprocess
 
-Version = '2.7'
+Version = '2.8'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
 # server connection
@@ -244,7 +245,7 @@ def ProcessLogFile(logf, foff):
    ofoff = foff
    maxts = ''
 
-   f = open(Path + 'logs/' + logf, 'r')
+   f = open(Path + 'logs/' + logf, 'r', 1) # line buffered
    if f is None: return None;
    if foff != 0: f.seek(foff)
 
