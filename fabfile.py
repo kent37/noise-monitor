@@ -11,11 +11,13 @@ env.hosts = ['kent37pi.local', 'rpi2.local']
 env.user = 'pi'
 env.key_filename = '~/.ssh/id_rsa.pub'
 
+@task
 @hosts('kent37pi.local')
 def count_new_logs():
 	''' Count the number of logs which have not been downloaded yet. '''
 	print len(find_new_logs()), ' new logs'
 
+@task
 @hosts('kent37pi.local')
 def get_new_logs():
 	''' Download all new logs. '''
@@ -36,6 +38,13 @@ def find_new_logs():
 		output = [f for f in output if f not in local_logs]
 		return output
 
+@task
+@hosts('rpi2.local')
+def count_new_tracks():
+	''' Count the number of tracks which have not been downloaded yet. '''
+	print len(find_new_tracks()), ' new tracks'
+
+@task
 @hosts('rpi2.local')
 def get_new_tracks():
 	''' Download all new tracks. '''
@@ -46,7 +55,6 @@ def get_new_tracks():
 			print track
 			get(remote_path=track, local_path=track)
 
-@hosts('rpi2.local')
 def find_new_tracks():
 	''' Get a list of tracks on the remote not on local. '''
 	local_tracks = set(os.listdir('../tracks'))
