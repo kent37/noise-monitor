@@ -14,6 +14,8 @@
 # 2015-10-02, 2.5 - Suspect a sessions bug, closing a session after an post exception fails.
 # 2015-10-02, 2.6 - Add update and reboot response transfer logic.
 # 2015-11-01, 2.7 - Include the network version, and WIFI  signal strength
+# 2015-11-19, 2.8 - Reduce the buffering of the log fiels to a single line.
+# 2015-12-03, 2.9 - Add check for missing log file. A race conditon can cause this.
 #
 # This applet processes all the log files found in the logs directory.
 # It sends the data to the common server for safekeeping and analysis.
@@ -36,7 +38,7 @@ import sys
 import syslog
 import subprocess
 
-Version = '2.7'
+Version = '2.9'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
 # server connection
@@ -139,6 +141,7 @@ def main():
             lastlog = logf[0]
 
          foff = ProcessLogFile(logf[0], foff)
+         if foff is None: break
 
          # zero or positive offset means the file was completely processed.
          # Usually that means the log file should be deleted or backed up,
@@ -244,8 +247,11 @@ def ProcessLogFile(logf, foff):
    ofoff = foff
    maxts = ''
 
-   f = open(Path + 'logs/' + logf, 'r')
-   if f is None: return None;
+   f = open(Path + 'logs/' + logf, 'r', 1) # line buffered
+   if f is None:
+      Log('Log file does not exist: ' + logf)
+      return None;
+
    if foff != 0: f.seek(foff)
 
    cnt = 0
