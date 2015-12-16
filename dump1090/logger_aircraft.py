@@ -37,8 +37,7 @@ def main():
       Log('Logging to: ' + logname)
       logfile = open(logname, 'a')
 
-      # Gather the meter data, sampling twice a second.
-      # Also decode the meter options
+      # Gather the aircraft data, sampling once a second.
       try:
          if GetSamples(logfile) == False:
             Log('/nGlitch or disconnect')
