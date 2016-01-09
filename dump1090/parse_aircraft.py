@@ -82,11 +82,11 @@ def read_aircraft(url):
     try:
         r = S.get(url + '/data/aircraft.json')
         r.raise_for_status()
+        return r.json()
     except:
         return
 
-    return r.json()
-
+    
 # From https://github.com/mutability/dump1090-tools/blob/master/collectd/dump1090.py
 def greatcircle(lon0, lat0, lon1, lat1):
     ''' Great circle distance between two points. '''

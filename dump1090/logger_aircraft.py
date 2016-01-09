@@ -10,8 +10,11 @@ import syslog
 
 import parse_aircraft as pa
 
-Version = '1.0'
+Version = '1.1'
 Path = os.path.dirname(os.path.realpath(sys.argv[0])) + '/'
+
+max_dist_feet = 25*5280
+max_altitude_feet = 10000
 
 LogDuration = 7200
 
@@ -62,13 +65,15 @@ def GetSamples(logfile):
                  'nucp', 'seen_pos', 'vert_rate', 'track', 'speed', 
                  'messages', 'seen', 'rssi']
    home = pa.read_receiver(url)
+   if home == (None, None):
+      Log('Lat and lon not set or published in dump1090 config.')
 
    tbgn = datetime.datetime.now()
    now = tbgn;
    writer = csv.DictWriter(logfile, fieldnames=fieldnames, extrasaction='ignore')
    acs = pa.aircraft_loop(url)
    acs = pa.filter_current(acs)
-   acs = pa.filter_by_distance(acs, home, 25*5280, 10000)
+   acs = pa.filter_by_distance(acs, home, max_dist_feet, max_altitude_feet)
    for ac in acs: 
       writer.writerow(ac)
 
