@@ -9,26 +9,33 @@ import time
 rpi2 = 'http://rpi2.local/dump1090'
 feet_per_meter = 3.28084
 meters_per_mile = 5280/feet_per_meter
+max_dist_feet = 25*5280
+max_altitude_feet = 10000
 
 S = requests.session()
 
 def filter_by_distance(acs, home, max_dist_feet, max_altitude_feet):
     for ac in acs:
-        dist = greatcircle(home[0], home[1], ac['lon'], ac['lat']) * feet_per_meter
-        dist = int(dist)
-        if dist <= max_dist_feet and ac['altitude'] < max_altitude_feet:
-            ac['dist'] = dist
-            yield ac
+        try:
+            ac['altitude'] = int(ac['altitude'])
+        except ValueError:
+            pass  # it was probably the string "ground".
+        else:
+            dist = greatcircle(home[0], home[1], ac['lon'], ac['lat']) * feet_per_meter
+            dist = int(dist)
+            if dist <= max_dist_feet and ac['altitude'] < max_altitude_feet:
+        	    ac['dist'] = dist
+        	    yield ac
             
 def filter_current(acs):
     ''' Filter aircraft to ones with current lat lon and altitude data.
         Replace mlat dict with flag'''
     for ac in acs:
-        if ac['seen'] > 15 or (ac.has_key('seen_pos') and ac['seen_pos'] > 15):
+        if ac['seen'] > 15 or ('seen_pos' in ac and ac['seen_pos'] > 15):
             continue
-        if not ac.has_key('lat') or not ac.has_key('altitude'):
+        if not 'lat' in ac or not 'altitude' in ac:
             continue
-        if ac.has_key('mlat'):
+        if 'mlat' in ac:
             ac['mlat'] = 1
         else:
             ac['mlat'] = 0
@@ -62,7 +69,7 @@ def read_receiver(url):
         return
     
     receiver = r.json()
-    if receiver.has_key('lat'):
+    if 'lat' in receiver:
         rlat = float(receiver['lat'])
         rlon = float(receiver['lon'])
     else:
@@ -102,5 +109,5 @@ if __name__ == '__main__':
 
         acs = aircraft_loop(rpi2)
         acs = filter_current(acs)
-        acs = filter_by_distance(acs, home, 25*5280, 10000)
+        acs = filter_by_distance(acs, home, max_dist_feet, max_altitude_feet)
         for ac in acs: writer.writerow(ac)
