@@ -5,6 +5,7 @@
 # 2016, Rene Vega
 # 2016-03-25, 1.0 - Initial version.
 # 2016-04-01, 1.1 - Log read timeouts and other exceptions
+# 2016-04-02, 1.2 - Deal with differences in dump1090 mutability
 #
 
 import datetime
@@ -15,7 +16,7 @@ import sys
 import syslog
 import time
 
-Version = '1.1'
+Version = '1.2'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
 # server connection
@@ -28,7 +29,8 @@ S = requests.Session()
 print os.path.dirname(os.path.realpath(sys.argv[0]))
 
 # Requires dump1090 --net
-GetData = lambda : json.loads(requests.get('http://localhost:8080/data.json').content)
+GetData = lambda : json.loads(requests.get('http://localhost:8080/data.json').content) # standard dump1090
+# GetData = lambda : json.loads(requests.get('http://localhost:8080/data/aircraft.json').content) # dump1090 mutability
 Interval = 4.0
 ShowSummary = False
 ShowDetails = False
@@ -74,7 +76,8 @@ while True:
 
       # Summary stats
       for v in data:
-         vp = v['validposition']
+         if abs(v['lat']) > 0.001 or abs(v['lon']) > 0.001: vp = 1
+         else: vp = 0
          alt = v['altitude']
          flight = v['flight']
          if vp==1: mode_es = mode_es+1
