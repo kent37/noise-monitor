@@ -1,5 +1,6 @@
 #!/bin/bash
 # 2015-09-21, Add ethernet interface checks.
+# 2015-12-25, Increase the down time sleep delay, some WiFi dongles take longer to reset.
 
 timestamp() {
   date +"%Y-%m-%d_%H:%M:%S"
@@ -29,7 +30,7 @@ while true ; do
       sleep 1
       log "WIFI connection down! Reconnecting."
       ifup --force wlan0
-      sleep 10
+      sleep 20
    fi
 done
 
