@@ -29,8 +29,9 @@ S = requests.Session()
 print os.path.dirname(os.path.realpath(sys.argv[0]))
 
 # Requires dump1090 --net
-GetData = lambda : json.loads(requests.get('http://localhost:8080/data.json').content) # standard dump1090
+# GetData = lambda : json.loads(requests.get('http://localhost:8080/data.json').content) # standard dump1090
 # GetData = lambda : json.loads(requests.get('http://localhost:8080/data/aircraft.json').content) # dump1090 mutability
+GetData = lambda : json.loads(requests.get('http://localhost/dump1090/data/aircraft.json').content) # KJ dump1090 mutability
 Interval = 4.0
 ShowSummary = False
 ShowDetails = False
