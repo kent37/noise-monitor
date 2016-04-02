@@ -1,10 +1,12 @@
 # Sound/noise logger for WENSN 1361 meter
 # 2015, Rene Vega
 # 2015-09-22, Add logging to var/log/messages
-# 2015-09-22, Add version control
-# 2015-09-23, Add batched samples to speed up catchup mode and to lower the physical write rate.
-# 2015-09-30, fix missing ","
-# 2015-11-01, raise the batchsize to 20 samples (10 second intervals)
+# 2015-09-22, 2.0 - Add version control
+# 2015-09-23,       Add batched samples to speed up catchup mode and to lower the physical write rate.
+# 2015-09-30, 2.1 - fix missing ","
+# 2015-11-01, 2.2 - raise the batchsize to 20 samples (10 second intervals)
+# 2016-01-11, 2.3 - Change log file file names to Log_yyyy-mm-dd_hh:mm:ss.txt 
+# 2016-01-24, 2.4 - Catch meter access exception during lookup.
 
 import datetime
 import time
@@ -13,7 +15,7 @@ import usb.core
 import os
 import syslog
 
-Version = '2.2'
+Version = '2.4'
 Path = os.path.dirname(os.path.realpath(sys.argv[0])) + '/'
 
 LogDuration = 7200
@@ -49,17 +51,19 @@ def main():
             dev = usb.core.find(idVendor=0x16c0, idProduct=0x5dc) # WENSN
             if dev is not None:
                print 'device found'
+               dev.set_configuration()
                break
             time.sleep(1.0)
       except KeyboardInterrupt:
          print '\nEnding search'
          sys.exit(0)
-
-      dev.set_configuration()
+      except Exception as e:
+         Log('Exception accesing meter: ' + str(e))
 
       # Make the log name, then open it.
-      dt = str(datetime.datetime.now()).replace(' ','_')
-      logname = dir + 'Log_' + dt
+      # dt = str(datetime.datetime.now()).replace(' ','_')
+      dt = datetime.datetime.now().strftime('%Y-%m-%d_%T')
+      logname = dir + 'Log_' + dt + '.txt'
       Log('Logging to: ' + logname)
       logfile = open(logname, 'a')
 
