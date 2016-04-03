@@ -16,6 +16,19 @@ import sys
 import syslog
 import time
 
+# Without the below disable_warnings() I get this message on every connection 
+# to the server:
+# /usr/local/lib/python2.7/dist-packages/requests/packages/urllib3/util/ssl_.py:100: 
+# InsecurePlatformWarning: A true SSLContext object is not available. 
+# This prevents urllib3 from configuring SSL appropriately and may cause certain SSL 
+# connections to fail. 
+# For more information, see https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning.
+# 
+# I was unable to implement any of the recommended fixes suggested at that link
+# so I am taking the easy way out and disabling warnings. 
+# requests has its own embedded copy of urllib3, we have to disable that one.
+requests.packages.urllib3.disable_warnings()
+
 Version = '1.2'
 Path = os.path.dirname(os.path.realpath(sys.argv[0]))+ '/'
 
@@ -31,7 +44,7 @@ print os.path.dirname(os.path.realpath(sys.argv[0]))
 # Requires dump1090 --net
 # GetData = lambda : json.loads(requests.get('http://localhost:8080/data.json').content) # standard dump1090
 # GetData = lambda : json.loads(requests.get('http://localhost:8080/data/aircraft.json').content) # dump1090 mutability
-GetData = lambda : json.loads(requests.get('http://localhost/dump1090/data/aircraft.json').content) # KJ dump1090 mutability
+GetData = lambda : json.loads(requests.get('http://localhost/dump1090/data/aircraft.json').content)['aircraft'] # KJ dump1090 mutability
 Interval = 4.0
 ShowSummary = False
 ShowDetails = False
@@ -77,10 +90,10 @@ while True:
 
       # Summary stats
       for v in data:
-         if abs(v['lat']) > 0.001 or abs(v['lon']) > 0.001: vp = 1
+         if 'lat' in v and (abs(v['lat']) > 0.001 or abs(v['lon']) > 0.001): vp = 1
          else: vp = 0
-         alt = v['altitude']
-         flight = v['flight']
+         alt = v['altitude'] if 'altitude' in v else 0
+         flight = v['flight'] if 'flight' in v else ''
          if vp==1: mode_es = mode_es+1
          if alt!=0:
             mode_s = mode_s+1
@@ -94,15 +107,16 @@ while True:
 
       # Select only valid position messages
       for v in data:
-         squawk = str(v['squawk'])
-         flight = str(v['flight'])
+         if not 'lat' in v: continue
+         squawk = str(v['squawk']) if 'squawk' in v else ''
+         flight = str(v['flight']) if 'flight' in v else ''
          icao = str(v['hex'])
          lat = v['lat']
          lng = v['lon']
-         alt = v['altitude']
-         trk = v['track']
-         spd = v['speed']
-         vert = v['vert_rate']
+         alt = v['altitude'] if 'altitude' in v else 0
+         trk = v['track'] if 'track' in v else 0
+         spd = v['speed'] if 'speed' in v else 0
+         vert = v['vert_rate'] if 'vert_rate' in v else 0
          if vert > 0: vert = '+'+str(vert)
          else: vert = str(vert)
          if abs(lat) > 0.001 and abs(lng) > 0.001:
