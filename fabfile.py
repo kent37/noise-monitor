@@ -7,7 +7,7 @@ from fabric.decorators import hosts
 import os
 from StringIO import StringIO
 
-env.hosts = ['kent37pi.local', 'rpi2.local']
+env.hosts = ['kent37pi.local', '10.0.0.250']
 env.user = 'pi'
 env.key_filename = '~/.ssh/id_rsa.pub'
 
@@ -39,7 +39,7 @@ def find_new_logs():
 		return output
 
 @task
-@hosts('rpi2.local')
+@hosts('10.0.0.250')
 def count_new_tracks():
 	''' Count the number of tracks which have not been downloaded yet. '''
 	print len(find_new_tracks()), ' new tracks'
@@ -47,7 +47,7 @@ def count_new_tracks():
 local_track_dir = '/Volumes/TRACKS/'
 
 @task
-@hosts('rpi2.local')
+@hosts('10.0.0.250')
 def get_new_tracks():
 	''' Download all new tracks. '''
 	new_tracks = find_new_tracks()
