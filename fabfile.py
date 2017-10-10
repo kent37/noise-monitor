@@ -62,7 +62,7 @@ def find_new_tracks():
 	local_tracks = set(os.listdir(local_track_dir))
 	with cd('/home/pi/logger/tracks'):
 		myout = StringIO()
-		output = run('ls', stdout=myout)
+		output = run('ls Tracks_*', stdout=myout)
 		output = output.split()
 		output = [f for f in output if f not in local_tracks]
 		return output
